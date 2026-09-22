@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:shop
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create        # 매 실행마다 스키마를 새로 만든다
+    properties:
+      hibernate:
+        format_sql: true
+        # default_batch_fetch_size: 100   # 해결 3(배치 사이즈)을 전역으로 켜고 싶을 때만 주석 해제.
+        # N+1 재현 테스트가 있는 상태로 전역 적용하면 재현 테스트가 깨지므로, 이 프로젝트에서는
+        # BatchSizeTest 안에서 @TestPropertySource로 해당 테스트에만 켠다.
+    open-in-view: false
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
