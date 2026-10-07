@@ -1,0 +1,40 @@
+# ============================================================
+# local 프로파일 = 내 PC 개발용
+#  - DB   : H2 메모리 DB (설치 필요 없음, 서버 끄면 데이터 사라짐)
+#  - 캐시 : Caffeine (서버 JVM 메모리 안에 저장)
+#  - Actuator: 디버깅하기 좋게 많이 열어 둠
+# ============================================================
+spring:
+  datasource:
+    url: jdbc:h2:mem:cacheapi
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true        # http://localhost:8080/h2-console
+  jpa:
+    hibernate:
+      ddl-auto: create     # 실행할 때마다 테이블 새로 생성
+    show-sql: true         # 캐시가 먹으면 두 번째 조회 때 SELECT 로그가 안 찍히는 걸 눈으로 확인 가능
+  cache:
+    type: caffeine         # ★ CacheAutoConfiguration 이 이 값을 보고 CaffeineCacheManager 를 만든다
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=10m   # 최대 500개, 저장 후 10분 지나면 만료
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # health     : 헬스체크
+        # caches     : 지금 어떤 캐시가 있는지
+        # conditions : ★ 자동 구성이 "왜 적용됐는지/안 됐는지" 보고서 (강의 내용 확인용)
+        # beans, info, metrics : 참고용
+        include: health,info,caches,conditions,beans,metrics
+  endpoint:
+    health:
+      show-details: always # local 은 db, diskSpace 등 세부 상태까지 다 보여줌
+  health:
+    redis:
+      # starter-data-redis 가 클래스패스에 있으면 Redis 헬스체크가 "자동으로" 붙는다.
+      # local 에는 Redis 서버가 없으므로 그대로 두면 /actuator/health 가 DOWN 이 된다 → local 에서만 끈다.
+      enabled: false

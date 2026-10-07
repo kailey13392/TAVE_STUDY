@@ -1,0 +1,20 @@
+# prod 프로파일을 내 PC 에서 흉내 내기 위한 MySQL + Redis
+#   docker compose up -d
+#   DB_PASSWORD=cacheapi ./gradlew bootRun --args='--spring.profiles.active=prod'
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: cacheapi
+      MYSQL_USER: cacheapi
+      MYSQL_PASSWORD: cacheapi
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"

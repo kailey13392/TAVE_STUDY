@@ -1,0 +1,6 @@
+// JDK 17이 PC에 없어도 Gradle이 알아서 받아오도록 해주는 플러그인 (toolchain 자동 다운로드)
+plugins {
+	id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+rootProject.name = 'cache-api'

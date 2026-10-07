@@ -1,0 +1,60 @@
+/*
+ * [4주차] 캐싱 + 프로파일(local/prod) + Actuator 실습용 빌드 설정
+ *
+ * - Spring Boot 4.1.1 (2주차 과제와 같은 버전)
+ * - 의존성을 "넣기만 하면" 스프링 부트 자동 구성(Auto Configuration)이 알아서 빈을 만들어 준다.
+ *   예) starter-cache + caffeine 이 있으면 CaffeineCacheManager,
+ *       starter-data-redis 가 있으면 RedisConnectionFactory / RedisCacheManager 후보가 생김
+ *   실제로 어떤 걸 쓸지는 application-{profile}.yml 의 spring.cache.type 으로 고른다.
+ */
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.1.1'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.tave_2'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// --- 웹 / DB ---
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'      // REST API
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'    // JPA
+	implementation 'org.springframework.boot:spring-boot-starter-validation'  // @NotBlank, @Min 등 요청값 검증
+	implementation 'org.springframework.boot:spring-boot-h2console'           // local에서 H2 콘솔(/h2-console) 쓰기용
+
+	// --- 캐시 ---
+	implementation 'org.springframework.boot:spring-boot-starter-cache'       // @Cacheable 등 스프링 캐시 추상화
+	implementation 'com.github.ben-manes.caffeine:caffeine'                   // local 프로파일용 "메모리 캐시" 구현체
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'  // prod 프로파일용 "Redis 캐시" 구현체
+
+	// --- 운영 모니터링 ---
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'    // /actuator/health 같은 헬스체크 엔드포인트
+
+	// --- DB 드라이버 ---
+	runtimeOnly 'com.h2database:h2'               // local: 메모리 DB
+	runtimeOnly 'com.mysql:mysql-connector-j'     // prod : MySQL
+
+	// --- 롬복 ---
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// --- 테스트 ---
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

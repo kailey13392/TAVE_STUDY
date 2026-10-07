@@ -1,0 +1,40 @@
+# ============================================================
+# prod 프로파일 = 운영(배포) 환경
+#  - DB   : MySQL
+#  - 캐시 : Redis (서버가 여러 대여도 캐시를 같이 쓸 수 있음)
+#  - 비밀번호 같은 민감 정보는 파일에 적지 않고 환경 변수로 받는다: ${환경변수명:기본값}
+#  - Actuator: 필요한 것(health)만 열고 세부 정보는 숨긴다
+# ============================================================
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/cacheapi}
+    username: ${DB_USERNAME:cacheapi}
+    password: ${DB_PASSWORD}        # 기본값 없음 → 환경 변수 안 주면 실행 실패 (실수 방지)
+  jpa:
+    hibernate:
+      ddl-auto: validate   # 운영 DB 테이블은 절대 자동 생성/삭제하지 않고 "엔티티와 맞는지 검사"만
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  cache:
+    type: redis            # ★ 같은 코드인데 여기만 바꾸면 RedisCacheManager 가 만들어진다
+    redis:
+      time-to-live: 10m    # 캐시 만료 시간 (TTL)
+      cache-null-values: false
+      key-prefix: "cache-api::"   # 같은 Redis 를 다른 서비스와 같이 써도 키가 안 겹치게
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health    # 운영에서는 health 만 공개 (conditions, beans 등은 내부 정보라 숨김)
+  endpoint:
+    health:
+      show-details: never  # 외부에는 {"status":"UP"} 만. DB 주소 같은 정보 노출 방지
+      probes:
+        enabled: true      # /actuator/health/liveness, /actuator/health/readiness 활성화 (쿠버네티스/로드밸런서용)
+      group:
+        readiness:
+          # "요청 받을 준비 됐나?" 판단에 DB, Redis 연결 상태까지 포함
+          include: readinessState,db,redis
