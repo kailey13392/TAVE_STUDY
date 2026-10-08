@@ -13,8 +13,8 @@ spring:
   jpa:
     open-in-view: false   # 트랜잭션이 끝나면 DB 커넥션도 바로 반납 (권장 설정)
   cache:
-    # 미리 만들어 둘 캐시 이름. (CacheConfig.ITEM / ITEM_LIST 와 같아야 함)
-    cache-names: item,itemList
+    # 미리 만들어 둘 캐시 이름. (CacheConfig.ITEM / ITEM_PAGE 와 같아야 함)
+    cache-names: item,itemPage
 
 management:
   endpoints:

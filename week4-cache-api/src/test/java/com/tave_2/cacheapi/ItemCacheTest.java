@@ -3,12 +3,12 @@ package com.tave_2.cacheapi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.tave_2.cacheapi.config.CacheConfig;
-import com.tave_2.cacheapi.dto.ItemCreateRequest;
-import com.tave_2.cacheapi.dto.ItemResponse;
-import com.tave_2.cacheapi.dto.ItemUpdateRequest;
-import com.tave_2.cacheapi.exception.ItemNotFoundException;
-import com.tave_2.cacheapi.service.ItemService;
+import com.tave_2.cacheapi.domain.item.dto.ItemCreateRequest;
+import com.tave_2.cacheapi.domain.item.dto.ItemResponse;
+import com.tave_2.cacheapi.domain.item.dto.ItemUpdateRequest;
+import com.tave_2.cacheapi.domain.item.exception.ItemNotFoundException;
+import com.tave_2.cacheapi.domain.item.service.ItemService;
+import com.tave_2.cacheapi.global.config.CacheConfig;
 import jakarta.persistence.EntityManagerFactory;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
@@ -62,28 +62,54 @@ class ItemCacheTest {
 	}
 
 	@Test
-	void 목록조회_두번째부터는_DB를_안가고_등록하면_목록캐시가_비워진다() {
-		itemService.getItems();
-		itemService.getItems();
-		assertThat(stats.getPrepareStatementCount()).isEqualTo(1);
+	void 페이지조회_같은_page_size면_DB를_안가고_다른_size면_따로_캐시된다() {
+		itemService.getItems(0, 10); // 1번째: SELECT(목록) + SELECT count(전체 개수) = 쿼리 2번
+		long first = stats.getPrepareStatementCount();
+		itemService.getItems(0, 10); // 같은 키 "0:10" → 캐시 히트
+		assertThat(stats.getPrepareStatementCount()).isEqualTo(first);
 
-		itemService.createItem(new ItemCreateRequest("마우스", 5000, 3)); // @CacheEvict(itemList)
-		assertThat(cacheManager.getCache(CacheConfig.ITEM_LIST).get(org.springframework.cache.interceptor.SimpleKey.EMPTY))
-				.isNull();
+		itemService.getItems(0, 5);  // 다른 키 "0:5" → 캐시 미스, 다시 DB 조회
+		assertThat(stats.getPrepareStatementCount()).isGreaterThan(first);
+
+		assertThat(cacheManager.getCache(CacheConfig.ITEM_PAGE).get("0:10")).isNotNull();
+		assertThat(cacheManager.getCache(CacheConfig.ITEM_PAGE).get("0:5")).isNotNull();
+	}
+
+	@Test
+	void 등록하면_목록캐시가_모든_페이지에서_비워진다() {
+		itemService.getItems(0, 10);
+		itemService.getItems(1, 10);
+
+		itemService.createItem(new ItemCreateRequest("마우스", 5000, 3)); // @CacheEvict(itemPage, allEntries)
+
+		assertThat(cacheManager.getCache(CacheConfig.ITEM_PAGE).get("0:10")).isNull();
+		assertThat(cacheManager.getCache(CacheConfig.ITEM_PAGE).get("1:10")).isNull();
+	}
+
+	@Test
+	void 페이지는_최신등록순으로_정렬된다() {
+		Long older = itemService.createItem(new ItemCreateRequest("먼저 등록", 1000, 1)).id();
+		Long newer = itemService.createItem(new ItemCreateRequest("나중 등록", 1000, 1)).id();
+
+		var content = itemService.getItems(0, 2).content();
+
+		assertThat(content).extracting(ItemResponse::id).containsExactly(newer, older);
 	}
 
 	@Test
 	void 수정하면_CachePut으로_캐시가_최신값으로_바뀐다() {
-		Long id = itemService.createItem(new ItemCreateRequest("모니터", 200000, 2)).id();
-		itemService.getItem(id); // 캐시에 "모니터" 저장
+		ItemResponse created = itemService.createItem(new ItemCreateRequest("모니터", 200000, 2));
+		itemService.getItem(created.id()); // 캐시에 "모니터" 저장
 
-		itemService.updateItem(id, new ItemUpdateRequest("모니터(할인)", 150000, 2));
+		itemService.updateItem(created.id(), new ItemUpdateRequest("모니터(할인)", 150000, 2));
 		stats.clear();
 
-		ItemResponse found = itemService.getItem(id);
+		ItemResponse found = itemService.getItem(created.id());
 
 		assertThat(found.name()).isEqualTo("모니터(할인)"); // 낡은 값이 아니라 수정된 값
 		assertThat(stats.getPrepareStatementCount()).isZero(); // 그리고 DB 를 안 갔다 (CachePut 덕분)
+		// 캐시에 들어간 updatedAt 도 수정 시점으로 바뀌어 있어야 한다 (ItemService.updateItem 의 flush 덕분)
+		assertThat(found.updatedAt()).isAfter(created.updatedAt());
 	}
 
 	@Test

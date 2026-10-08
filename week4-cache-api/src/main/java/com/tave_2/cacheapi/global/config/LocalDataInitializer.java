@@ -1,7 +1,7 @@
-package com.tave_2.cacheapi.init;
+package com.tave_2.cacheapi.global.config;
 
-import com.tave_2.cacheapi.domain.Item;
-import com.tave_2.cacheapi.repository.ItemRepository;
+import com.tave_2.cacheapi.domain.item.entity.Item;
+import com.tave_2.cacheapi.domain.item.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;

@@ -1,0 +1,49 @@
+### ============================================================
+### API 연동 실습 파일 (IntelliJ HTTP Client / VS Code REST Client)
+### 각 요청 왼쪽의 ▶ 버튼을 눌러 실행합니다. local 서버(./gradlew bootRun)를 먼저 켜 주세요.
+### 같은 단건 조회를 두 번 실행해 보면, 두 번째에는 서버 콘솔에 select 로그가 찍히지 않습니다 (캐시 히트).
+### ============================================================
+@host = http://localhost:8080
+
+### 1. 상품 등록 → 201
+POST {{host}}/api/v1/items
+Content-Type: application/json
+
+{ "name": "USB 허브", "price": 25000, "stockQuantity": 20 }
+
+### 2. 상품 목록 (페이징, 최신순)
+GET {{host}}/api/v1/items?page=0&size=2
+
+### 3. 상품 단건 조회 (두 번 실행해서 캐시 확인)
+GET {{host}}/api/v1/items/1
+
+### 4. 상품 수정 → 이후 3번을 다시 실행해도 select 없이 수정된 값이 나옴 (@CachePut)
+PUT {{host}}/api/v1/items/1
+Content-Type: application/json
+
+{ "name": "무선 키보드(할인)", "price": 49000, "stockQuantity": 30 }
+
+### 5. 상품 삭제 → 204
+DELETE {{host}}/api/v1/items/2
+
+### --- 에러 응답 확인 ---
+
+### 404 없는 상품
+GET {{host}}/api/v1/items/999
+
+### 400 검증 실패 (size 상한)
+GET {{host}}/api/v1/items?size=1000
+
+### 400 타입 불일치
+GET {{host}}/api/v1/items/abc
+
+### --- Actuator ---
+
+### 헬스체크
+GET {{host}}/actuator/health
+
+### 현재 캐시 목록
+GET {{host}}/actuator/caches
+
+### 자동 구성 보고서 (2강 내용 확인용)
+GET {{host}}/actuator/conditions

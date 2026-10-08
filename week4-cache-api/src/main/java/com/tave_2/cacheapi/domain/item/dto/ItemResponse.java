@@ -1,7 +1,8 @@
-package com.tave_2.cacheapi.dto;
+package com.tave_2.cacheapi.domain.item.dto;
 
-import com.tave_2.cacheapi.domain.Item;
+import com.tave_2.cacheapi.domain.item.entity.Item;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
  * 상품 응답 DTO = "캐시에 실제로 저장되는 값".
@@ -13,9 +14,17 @@ import java.io.Serializable;
  *
  * record 를 쓴 이유: 불변 객체라서 캐시에 넣어 두고 여러 요청이 같이 꺼내 써도 안전하다.
  */
-public record ItemResponse(Long id, String name, int price, int stockQuantity) implements Serializable {
+public record ItemResponse(
+		Long id,
+		String name,
+		int price,
+		int stockQuantity,
+		LocalDateTime createdAt,
+		LocalDateTime updatedAt
+) implements Serializable {
 
 	public static ItemResponse from(Item item) {
-		return new ItemResponse(item.getId(), item.getName(), item.getPrice(), item.getStockQuantity());
+		return new ItemResponse(item.getId(), item.getName(), item.getPrice(), item.getStockQuantity(),
+				item.getCreatedAt(), item.getUpdatedAt());
 	}
 }

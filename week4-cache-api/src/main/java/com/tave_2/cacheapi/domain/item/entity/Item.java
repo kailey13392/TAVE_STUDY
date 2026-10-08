@@ -1,5 +1,6 @@
-package com.tave_2.cacheapi.domain;
+package com.tave_2.cacheapi.domain.item.entity;
 
+import com.tave_2.cacheapi.global.entity.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 상품 엔티티 (2주차 쇼핑몰 도메인의 Item 을 이어서 사용).
+ * BaseTimeEntity 를 상속해서 createdAt / updatedAt 이 자동으로 채워진다.
  *
  * 주의: 엔티티는 캐시에 직접 넣지 않는다. 캐시에는 ItemResponse(DTO)를 넣는다.
  *   - 엔티티는 영속성 컨텍스트에 묶여 있고, 지연 로딩 프록시가 섞여 있을 수 있어서
@@ -19,7 +21,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA 용 기본 생성자. 외부에서 new Item() 못 하게 막음
-public class Item {
+public class Item extends BaseTimeEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

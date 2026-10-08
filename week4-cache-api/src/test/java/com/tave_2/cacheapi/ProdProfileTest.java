@@ -2,7 +2,9 @@ package com.tave_2.cacheapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.tave_2.cacheapi.dto.ItemResponse;
+import com.tave_2.cacheapi.domain.item.dto.ItemResponse;
+import com.tave_2.cacheapi.global.common.PageResponse;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,12 +40,13 @@ class ProdProfileTest {
 	@Test
 	void 캐시값은_Redis_기본직렬화를_통과해야_한다() {
 		// RedisCacheManager 기본 직렬화(JDK)로 저장 → 다시 꺼내기를 흉내 낸다.
-		// ItemResponse 에 Serializable 이 없으면 여기서 실패한다.
+		// ItemResponse / PageResponse 에 Serializable 이 없으면 여기서 실패한다.
 		JdkSerializationRedisSerializer serializer = new JdkSerializationRedisSerializer();
-		List<ItemResponse> items = List.of(new ItemResponse(1L, "키보드", 10000, 5));
+		ItemResponse item = new ItemResponse(1L, "키보드", 10000, 5, LocalDateTime.now(), LocalDateTime.now());
+		PageResponse<ItemResponse> page = new PageResponse<>(List.of(item), 0, 10, 1, 1, false);
 
-		Object restored = serializer.deserialize(serializer.serialize(items));
-
-		assertThat(restored).isEqualTo(items);
+		// 단건 캐시 값(ItemResponse)과 목록 캐시 값(PageResponse) 둘 다 확인
+		assertThat(serializer.deserialize(serializer.serialize(item))).isEqualTo(item);
+		assertThat(serializer.deserialize(serializer.serialize(page))).isEqualTo(page);
 	}
 }

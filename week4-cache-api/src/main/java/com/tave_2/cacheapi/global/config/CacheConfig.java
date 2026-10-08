@@ -1,4 +1,4 @@
-package com.tave_2.cacheapi.config;
+package com.tave_2.cacheapi.global.config;
 
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +22,6 @@ public class CacheConfig {
 	/** 상품 단건 캐시. key = 상품 id */
 	public static final String ITEM = "item";
 
-	/** 상품 목록 캐시. 목록은 하나뿐이라 key 는 기본값(SimpleKey.EMPTY) */
-	public static final String ITEM_LIST = "itemList";
+	/** 상품 목록(페이지) 캐시. key = "페이지번호:페이지크기" (예: "0:10") */
+	public static final String ITEM_PAGE = "itemPage";
 }
