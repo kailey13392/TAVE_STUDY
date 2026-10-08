@@ -14,6 +14,7 @@
 - [`docs/api-spec.md`](docs/api-spec.md): API 명세 (설계 원칙, 요청·응답 예시, 에러 코드)
 - [`docs/auto-configuration.md`](docs/auto-configuration.md): 자동 구성 동작 원리 (`/actuator/conditions` 실제 결과로 추적)
 - [`http/items.http`](http/items.http): API 연동 실습 파일 (IntelliJ에서 ▶ 눌러 바로 호출)
+- [`docs/prod-verification.md`](docs/prod-verification.md): **prod 실측 검증 결과**. 실제 MySQL·Redis에 붙여 캐시 키, TTL, SQL 생략, 갱신·삭제, Actuator 응답을 확인했습니다
 
 ## 기술 스택
 Java 17 · Spring Boot 4.1.1 · Spring Data JPA · Spring Cache (Caffeine / Redis) · Actuator · H2 / MySQL
@@ -78,7 +79,7 @@ GET /api/v1/items/1 ──▶ [캐시 프록시] ── 캐시에 있음? ──
 
 # prod: MySQL과 Redis를 Docker로 띄운 뒤 실행합니다
 docker compose up -d
-DB_PASSWORD=cacheapi ./gradlew bootRun --args='--spring.profiles.active=prod'
+DB_PASSWORD=<docker-compose.yml의 MYSQL_PASSWORD> ./gradlew bootRun --args='--spring.profiles.active=prod'
 ```
 
 ### 캐시 동작 눈으로 확인하기 (local)
@@ -109,6 +110,10 @@ Actuator 응답은 공통 응답 형식으로 감싸지 않습니다. 로드밸�
 | `ItemCacheTest` (7) | Hibernate `Statistics`로 **실행된 쿼리 수**를 세서 캐시를 검증합니다(2주차와 같은 방식). 단건은 3번 조회해도 쿼리 1번 / 같은 `page:size`면 캐시 히트, 다른 size면 따로 캐시 / 등록하면 모든 페이지 캐시 삭제 / 최신순 정렬 / 수정 직후 조회는 쿼리 0번이고 `updatedAt`도 갱신됨 / 삭제 후 조회는 404 / local에서는 `CaffeineCacheManager` 생성 |
 | `ItemApiTest` (7) | MockMvc로 CRUD 흐름과 공통 응답 형식 확인. 에러 케이스: 본문 검증 400, size 상한 400, 타입 불일치 400, 깨진 JSON 400, PATCH 405. `/actuator/health`가 UP인지 확인 |
 | `ProdProfileTest` (2) | prod 프로파일에서 `RedisCacheManager`가 자동 구성되는지, `ItemResponse`와 `PageResponse`가 Redis 기본 직렬화(JDK)를 통과하는지 확인 |
+
+> 위 테스트는 Redis 서버 없이 돌아갑니다. 실제 Redis에서의 동작(키, TTL, 직렬화 값, SQL 생략)은 [`docs/prod-verification.md`](docs/prod-verification.md)에서 따로 확인했습니다.
+>
+> ⚠️ 알려진 문제: 노출하지 않은 Actuator 엔드포인트나 없는 경로로 요청하면 404가 아니라 500이 나옵니다. `GlobalExceptionHandler`가 `NoResourceFoundException`까지 잡기 때문이며, 아직 수정하지 않았습니다.
 
 ## 패키지 구조
 ```
